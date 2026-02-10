@@ -1,0 +1,17 @@
+[project]
+name = "news-api"
+version = "0.1.0"
+description = "FastAPI-based backend API for a news platform, focusing on clean architecture and modern API design."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.18.1",
+    "argon2-cffi>=25.1.0",
+    "asyncpg>=0.31.0",
+    "fastapi[standard]>=0.128.0",
+    "passlib>=1.7.4",
+    "psycopg2-binary>=2.9.11",
+    "python-decouple>=3.8",
+    "sqlalchemy[asyncio]>=2.0.46",
+    "uuid>=1.30",
+]

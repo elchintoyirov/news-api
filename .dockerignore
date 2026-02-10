@@ -1,0 +1,38 @@
+# Python bytecode and cache files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv
+.venv
+env
+.env
+
+# Build artifacts
+build
+dist
+develop-eggs
+*.egg-info
+
+# Version control
+.git
+.gitignore
+
+# IDE and OS-specific files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Documentation and temporary files
+*.md
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Docker specific files that are not needed inside the image
+Dockerfile
+.dockerignore
+docker-compose*.yml
