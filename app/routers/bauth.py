@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.models import User
 from app.schemas.user import (UserRegisterResponse, UserRegisterRequest)
 from sqlalchemy import select
-from services.utils import hash_password # fix import module
+from ..services.utils import hash_password # fix import module
 
 router = APIRouter()
 security = HTTPBasic()

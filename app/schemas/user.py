@@ -69,9 +69,9 @@ class UserResponse(UserBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-class UserRegisterResponse():
+class UserRegisterResponse(BaseModel):
     email: EmailStr
 
-class UserRegisterRequest():
+class UserRegisterRequest(BaseModel):
     email: EmailStr
     password: str
