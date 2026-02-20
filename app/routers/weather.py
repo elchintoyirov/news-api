@@ -4,6 +4,7 @@ from app.schemas.weather import WeatherResponse
 
 router = APIRouter()
 
+
 @router.get("/{city}", response_model=WeatherResponse)
 async def read_weather(city: str):
     try:
@@ -12,7 +13,7 @@ async def read_weather(city: str):
             city=data["name"],
             weather=data["weather"][0]["main"],
             description=data["weather"][0]["description"],
-            main=data["main"]
+            main=data["main"],
         )
         return weather_data
     except Exception as e:

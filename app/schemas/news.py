@@ -2,29 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
-class PostCreate(BaseModel):
-    title: str
-    slug: str
-    body: str
-    category_id: int
-    is_active: bool = True
 
-class PostResponse(BaseModel):
-    id: int
-    title: str
-    slug: str
-    body: str
-    category_id: int
-    user_id: int
-    views_count: int
-    comments_count: int
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-    
 class CategoryBase(BaseModel):
     name: str
 
@@ -41,6 +19,7 @@ class CategoryResponse(CategoryBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class PostBase(BaseModel):
     title: str
     body: str
@@ -48,14 +27,17 @@ class PostBase(BaseModel):
     user_id: int
     is_active: bool = True
 
+
 class PostCreate(PostBase):
-    pass
+    slug: str
+
 
 class PostUpdate(BaseModel):
     title: Optional[str] = None
     body: Optional[str] = None
     category_id: Optional[int] = None
     is_active: Optional[bool] = None
+
 
 class PostResponse(BaseModel):
     id: int
@@ -72,11 +54,18 @@ class PostResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class CommentBase(BaseModel):
     text: str
 
+
 class CommentCreate(CommentBase):
     user_id: int
+
+
+class CommentUpdate(BaseModel):
+    text: Optional[str] = None
+
 
 class CommentResponse(CommentBase):
     id: int
@@ -88,42 +77,39 @@ class CommentResponse(CommentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-class CommentUpdate(BaseModel):
-    text: str
 
-
-class TagCreateRequest(BaseModel):
+class TagBase(BaseModel):
     name: str
     slug: str
 
 
-class TagUpdateRequest(BaseModel):
-    name: str | None = None
+class TagCreate(TagBase):
+    pass
 
 
-class TagListResponse(BaseModel):
+class TagUpdate(BaseModel):
+    name: Optional[str] = None
+
+
+class TagResponse(TagBase):
     id: int
-    name: str
-    slug: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
-class CategoryListResonse(BaseModel):
-    id: int | None = None
-    name: str | None = None
-
-
-class CategoryCreateRequest(BaseModel):
-    name: str | None = None
-
-
-class ProfessionCreateRequest(BaseModel):
+class ProfessionBase(BaseModel):
     name: str
 
 
-class ProfessionListResponse(BaseModel):
+class ProfessionCreate(ProfessionBase):
+    pass
+
+
+class ProfessionUpdate(BaseModel):
+    name: Optional[str] = None
+
+
+class ProfessionResponse(ProfessionBase):
     id: int
-    name: str
 
-
-class ProfessionUpdateRequest(BaseModel):
-    name: str
+    model_config = ConfigDict(from_attributes=True)

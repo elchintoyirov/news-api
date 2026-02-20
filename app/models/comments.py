@@ -1,6 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Integer, Boolean, Text, ForeignKey, String, DateTime, func
+from sqlalchemy import (
+    BigInteger,
+    Integer,
+    Boolean,
+    Text,
+    ForeignKey,
+    String,
+    DateTime,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel, Base
 
@@ -9,7 +18,7 @@ class Comment(BaseModel):
     __tablename__ = "comment"
 
     post_id: Mapped[int] = mapped_column(ForeignKey("post.id"), primary_key=True)
-    media_id: Mapped[int] = mapped_column(ForeignKey('media.id'), primary_key=True)
+    media_id: Mapped[int] = mapped_column(ForeignKey("media.id"), primary_key=True)
 
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("user.id", ondelete="CASCADE"), nullable=True
@@ -24,6 +33,7 @@ class Comment(BaseModel):
     author: Mapped["User"] = relationship("User", back_populates="comments")
     post: Mapped["Post"] = relationship("Post", back_populates="comments")
 
+
 class UserSearch(Base):
     __tablename__ = "user_searches"
 
@@ -33,16 +43,20 @@ class UserSearch(Base):
 
     def __repr__(self):
         return f"UserSearch({self.term})"
-    
+
+
 class Devices(BaseModel):
     __tablename__ = "devices"
 
     user_agent: Mapped[str] = mapped_column(String(255), nullable=False)
-    last_active: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_active: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
     def __repr__(self):
         return f"Device({self.user_agent})"
-    
+
+
 class Like(Base):
     __tablename__ = "likes"
 

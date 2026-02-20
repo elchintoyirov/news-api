@@ -4,13 +4,20 @@ from typing import List
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.models import (User, Category, Post, Comment, Tag, Like)
-from app.schemas.news import (PostCreate, CommentCreate, 
-PostResponse, CategoryCreate, CategoryResponse, CommentUpdate)
+from app.models import User, Category, Post, Comment, Tag, Like
+from app.schemas.news import (
+    PostCreate,
+    CommentCreate,
+    PostResponse,
+    CategoryCreate,
+    CategoryResponse,
+    CommentUpdate,
+)
 from app.schemas.user import UserResponse, UserCreate, UserUpdate
 from app.services.utils import generate_slug
 
 router = APIRouter()
+
 
 @router.get("/news", response_model=List[PostResponse])
 async def news_list(
@@ -55,36 +62,38 @@ async def news_by_category(category_name: str, session: AsyncSession = Depends(g
 
 @router.get("/news/author/{author_id}", response_model=List[PostResponse])
 async def news_by_author(author_id: int, session: AsyncSession = Depends(get_db)):
-    result = await session.execute(
-        select(Post).where(Post.user_id == author_id)
-    )
+    result = await session.execute(select(Post).where(Post.user_id == author_id))
     return result.scalars().all()
 
 
 @router.get("/news/search", response_model=List[PostResponse])
-async def search_news(q: str = Query(..., min_length=1), session: AsyncSession = Depends(get_db)):
+async def search_news(
+    q: str = Query(..., min_length=1), session: AsyncSession = Depends(get_db)
+):
     stmt = select(Post).where(Post.title.ilike(f"%{q}%"))
     result = await session.execute(stmt)
     return result.scalars().all()
+
 
 @router.get("/news/trending", response_model=List[PostResponse])
 async def news_trending(
     is_active: bool | None = None,
     session: AsyncSession = Depends(get_db),
-    ):
+):
 
     stmt = (
         select(Like)
         .outerjoin(Like, Like.post_id == Post.id)
         .group_by(Post.id)
         .order_by(func.count(Like.id).desc())
-        )
+    )
 
     if is_active is not None:
         stmt = stmt.where(Post.is_active == is_active)
 
     result = await session.execute(stmt)
     return result.scalars().all()
+
 
 @router.post("/news", response_model=PostResponse)
 async def news_create(
@@ -101,13 +110,14 @@ async def news_create(
         user_id=post_in.user_id,
         is_active=post_in.is_active,
         created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
+        updated_at=datetime.now(timezone.utc),
     )
 
     session.add(post)
     await session.commit()
     await session.refresh(post)
     return post
+
 
 @router.post("/authors", response_model=UserResponse)
 async def author_create(user_in: UserCreate, session: AsyncSession = Depends(get_db)):
@@ -170,6 +180,7 @@ async def write_comment(
     session.add(comment)
     await session.commit()
     return comment
+
 
 @router.put("/authors/{author_id}", response_model=UserResponse)
 async def update_author(
@@ -247,8 +258,9 @@ async def comment_edit(
     return comment
 
 
-
-@router.delete("/news/{news_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete(
+    "/news/{news_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
+)
 async def news_delete(news_id: int, session: AsyncSession = Depends(get_db)):
     post = await session.get(Post, news_id)
     if not post:
@@ -256,4 +268,3 @@ async def news_delete(news_id: int, session: AsyncSession = Depends(get_db)):
 
     await session.delete(post)
     await session.commit()
-
