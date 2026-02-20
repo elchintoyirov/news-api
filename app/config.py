@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
-    SECRET_KEY: str = "secret-key"
+    SECRET_KEY: str
 
     SESSION_ID_EXPIRE_DAYS: int = 1
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
