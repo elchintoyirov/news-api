@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     EMAIL_ADDRESS: str
     SMTP_SERVER: str
-    SMTP_PORT: int = 587
+    SMTP_PORT: int = 587    
     EMAIL_PASSWORD: str | None = None
 
     REDIS_URL: str
