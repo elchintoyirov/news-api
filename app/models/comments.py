@@ -17,14 +17,14 @@ from app.models.base import BaseModel, Base
 class Comment(BaseModel):
     __tablename__ = "comment"
 
-    post_id: Mapped[int] = mapped_column(ForeignKey("post.id"), primary_key=True)
-    media_id: Mapped[int] = mapped_column(ForeignKey("media.id"), primary_key=True)
-
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("user.id", ondelete="CASCADE"), nullable=True
     )
     post_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("post.id", ondelete="CASCADE"), nullable=False
+    )
+    media_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("media.id", ondelete="SET NULL"), nullable=True
     )
 
     text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -32,13 +32,14 @@ class Comment(BaseModel):
 
     author: Mapped["User"] = relationship("User", back_populates="comments")
     post: Mapped["Post"] = relationship("Post", back_populates="comments")
+    media: Mapped["Media"] = relationship("Media")
 
 
 class UserSearch(Base):
     __tablename__ = "user_searches"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    term: Mapped[int] = mapped_column(String(50), nullable=False)
+    term: Mapped[str] = mapped_column(String(50), nullable=False)
     count: Mapped[int] = mapped_column(Integer, default=0)
 
     def __repr__(self):
