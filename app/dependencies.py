@@ -92,9 +92,7 @@ async def get_current_user_jwt(
     user_id = decoded["sub"]
     exp = datetime.fromtimestamp(decoded["exp"], tz=timezone.utc)
 
-    if exp < datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    ):
+    if exp < datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Token expired.")
 
     stmt = select(User).where(User.id == user_id).options(joinedload(User.profession))
