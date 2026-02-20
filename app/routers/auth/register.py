@@ -64,4 +64,6 @@ async def verify_register(
     user.is_active = True
     await db.commit()
 
+    redis_client.delete(secret_code)
+
     return {"message": "User registered successfully"}
