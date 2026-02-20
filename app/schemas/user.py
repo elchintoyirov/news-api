@@ -12,7 +12,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password_hash: str
+    password: str
     is_active: bool = True
     is_staff: bool = False
     is_superuser: bool = False
