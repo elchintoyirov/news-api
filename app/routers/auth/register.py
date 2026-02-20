@@ -1,6 +1,5 @@
 import secrets
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db as db_dep
@@ -45,9 +44,7 @@ async def register_user(
     db.add(user)
     await db.commit()
 
-    return JSONResponse(
-        status_code=201, content={"message": "Email confirmation sent to your email."}
-    )
+    return {"message": "Email confirmation sent to your email."}
 
 
 @router.post("/verify/{secret_code}/", response_model=UserRegisterResponse)
@@ -55,10 +52,10 @@ async def verify_register(
     secret_code: str, db: AsyncSession = Depends(db_dep)
 ):
     email = redis_client.get(secret_code)
-    print(email.decode("utf-8"))
-
     if not email:
         raise HTTPException(status_code=400, detail="Invalid code")
+
+    print(email.decode("utf-8"))
 
     stmt = select(User).where(User.email == email.decode("utf-8"))
     user = (await db.execute(stmt)).scalars().first()
@@ -69,6 +66,4 @@ async def verify_register(
     user.is_active = True
     await db.commit()
 
-    return JSONResponse(
-        status_code=200, content={"message": "User registered successfully"}
-    )
+    return {"message": "User registered successfully"}
