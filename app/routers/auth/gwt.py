@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db as db_dep
 from app.dependencies import current_user_jwt_dep
 from app.schemas.auth import UserLoginRequest, RefreshTokenRequest, UserProfileResponse
@@ -12,10 +13,12 @@ router = APIRouter(prefix="/jwt", tags=["Auth"])
 
 
 @router.post("/login/")
-async def login(db: db_dep, login_data: UserLoginRequest):
+async def login(
+    login_data: UserLoginRequest, db: AsyncSession = Depends(db_dep)
+):
 
     stmt = select(User).where(User.email == login_data.email)
-    user = db.execute(stmt).scalars().first()
+    user = (await db.execute(stmt)).scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not verify_password(login_data.password, user.password_hash):
@@ -30,7 +33,9 @@ async def login(db: db_dep, login_data: UserLoginRequest):
 
 
 @router.post("/refresh/")
-async def refresh(db: db_dep, data: RefreshTokenRequest):
+async def refresh(
+    data: RefreshTokenRequest, db: AsyncSession = Depends(db_dep)
+):
     decoded_data = decode_jwt_token(data.refresh_token)
 
     exp_time = datetime.fromtimestamp(decoded_data["exp"], tz=timezone.utc)

@@ -19,7 +19,7 @@ from app.services.utils import generate_slug
 router = APIRouter()
 
 
-@router.get("/news", response_model=List[PostResponse])
+@router.get("/", response_model=List[PostResponse])
 async def news_list(
     is_active: bool | None = None,
     category_id: int | None = None,
@@ -43,7 +43,7 @@ async def news_list(
     return result.scalars().all()
 
 
-@router.get("/news/{news_id}", response_model=PostResponse)
+@router.get("/{news_id}", response_model=PostResponse)
 async def news_by_id(news_id: int, session: AsyncSession = Depends(get_db)):
     stmt = select(Post).where(Post.id == news_id)
     result = await session.execute(stmt)
@@ -53,20 +53,20 @@ async def news_by_id(news_id: int, session: AsyncSession = Depends(get_db)):
     return post
 
 
-@router.get("/news/category/{category_name}", response_model=List[PostResponse])
+@router.get("/category/{category_name}", response_model=List[PostResponse])
 async def news_by_category(category_name: str, session: AsyncSession = Depends(get_db)):
     stmt = select(Post).join(Category).where(Category.name == category_name)
     result = await session.execute(stmt)
     return result.scalars().all()
 
 
-@router.get("/news/author/{author_id}", response_model=List[PostResponse])
+@router.get("/author/{author_id}", response_model=List[PostResponse])
 async def news_by_author(author_id: int, session: AsyncSession = Depends(get_db)):
     result = await session.execute(select(Post).where(Post.user_id == author_id))
     return result.scalars().all()
 
 
-@router.get("/news/search", response_model=List[PostResponse])
+@router.get("/search", response_model=List[PostResponse])
 async def search_news(
     q: str = Query(..., min_length=1), session: AsyncSession = Depends(get_db)
 ):
@@ -75,7 +75,7 @@ async def search_news(
     return result.scalars().all()
 
 
-@router.get("/news/trending", response_model=List[PostResponse])
+@router.get("/trending", response_model=List[PostResponse])
 async def news_trending(
     is_active: bool | None = None,
     session: AsyncSession = Depends(get_db),
@@ -95,7 +95,7 @@ async def news_trending(
     return result.scalars().all()
 
 
-@router.post("/news", response_model=PostResponse)
+@router.post("/", response_model=PostResponse)
 async def news_create(
     post_in: PostCreate,
     session: AsyncSession = Depends(get_db),
@@ -157,7 +157,7 @@ async def category_create(
     return category
 
 
-@router.post("/news/{news_id}/comments", response_model=None)
+@router.post("/{news_id}/comments", response_model=None)
 async def write_comment(
     news_id: int,
     comment_in: CommentCreate,
@@ -219,7 +219,7 @@ async def update_category(
     return category
 
 
-@router.put("/news/{news_id}", response_model=PostResponse)
+@router.put("/{news_id}", response_model=PostResponse)
 async def update_news(
     news_id: int,
     post_in: PostCreate,
@@ -241,7 +241,7 @@ async def update_news(
     return post
 
 
-@router.patch("/news/{news_id}/comments/{comment_id}", response_model=None)
+@router.patch("/{news_id}/comments/{comment_id}", response_model=None)
 async def comment_edit(
     news_id: int,
     comment_id: int,
@@ -259,7 +259,7 @@ async def comment_edit(
 
 
 @router.delete(
-    "/news/{news_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
+    "/{news_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
 )
 async def news_delete(news_id: int, session: AsyncSession = Depends(get_db)):
     post = await session.get(Post, news_id)

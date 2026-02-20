@@ -6,6 +6,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db as db_dep
 from app.models import User, UserSessionToken
@@ -14,18 +15,21 @@ from app.config import settings
 
 
 basic = HTTPBasic()
-basic_auth_dep = Annotated[HTTPBasicCredentials, Depends(basic)]
 
 jwt_security = HTTPBearer(auto_error=False)
 
 
-def get_current_user(session: db_dep, credentials: basic_auth_dep):
+async def get_current_user(
+    session: AsyncSession = Depends(db_dep),
+    credentials: HTTPBasicCredentials = Depends(basic),
+):
     stmt = (
         select(User)
         .where(User.email == credentials.username)
         .options(joinedload(User.profession))
     )
-    user = session.execute(stmt).scalars().first()
+    result = await session.execute(stmt)
+    user = result.scalars().first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -39,20 +43,23 @@ def get_current_user(session: db_dep, credentials: basic_auth_dep):
 current_user_basic_dep = Annotated[User, Depends(get_current_user)]
 
 
-def get_current_user_session(session: db_dep, request: Request):
+async def get_current_user_session(
+    request: Request, session: AsyncSession = Depends(db_dep)
+):
     sessionId = request.cookies.get("session_id")
     if not sessionId:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     stmt = select(UserSessionToken).where(UserSessionToken.token == sessionId)
-    session_obj = (session.execute(stmt)).scalars().first()
+    result = await session.execute(stmt)
+    session_obj = result.scalars().first()
 
     if not session_obj:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     if session_obj.expires_at < datetime.now(tz=timezone.utc):
-        session.delete(session_obj)
-        session.commit()
+        await session.delete(session_obj)
+        await session.commit()
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     stmt = (
@@ -60,7 +67,8 @@ def get_current_user_session(session: db_dep, request: Request):
         .where(User.id == session_obj.user_id)
         .options(joinedload(User.profession))
     )
-    user = session.execute(stmt).scalars().first()
+    result = await session.execute(stmt)
+    user = result.scalars().first()
 
     if not user or user.is_deleted:
         raise HTTPException(status_code=404, detail="User not found")
@@ -71,8 +79,9 @@ def get_current_user_session(session: db_dep, request: Request):
 session_auth_dep = Annotated[User, Depends(get_current_user_session)]
 
 
-def get_current_user_jwt(
-    session: db_dep, credentials: HTTPAuthorizationCredentials = Depends(jwt_security)
+async def get_current_user_jwt(
+    session: AsyncSession = Depends(db_dep),
+    credentials: HTTPAuthorizationCredentials = Depends(jwt_security),
 ):
     if not credentials:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -89,7 +98,8 @@ def get_current_user_jwt(
         raise HTTPException(status_code=401, detail="Token expired.")
 
     stmt = select(User).where(User.id == user_id).options(joinedload(User.profession))
-    user = session.execute(stmt).scalars().first()
+    result = await session.execute(stmt)
+    user = result.scalars().first()
 
     if not user or user.is_deleted:
         raise HTTPException(status_code=404, detail="User not found")

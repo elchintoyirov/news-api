@@ -1,7 +1,8 @@
 import secrets
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db as db_dep
 from app.models import User
 from app.schemas.user import (
@@ -14,9 +15,11 @@ router = APIRouter(prefix="/register", tags=["Auth"])
 
 
 @router.post("/", response_model=UserRegisterResponse)
-async def register_user(db: db_dep, data: UserRegisterRequest):
+async def register_user(
+    data: UserRegisterRequest, db: AsyncSession = Depends(db_dep)
+):
     stmt = select(User).where(User.email == data.email)
-    res = (db.execute(stmt)).scalars().first()
+    res = (await db.execute(stmt)).scalars().first()
 
     if res:
         raise HTTPException(status_code=400, detail="User already exists")
@@ -32,7 +35,7 @@ async def register_user(db: db_dep, data: UserRegisterRequest):
     redis_client.setex(secret_code, 120, user.email)
 
     stmt = select(User)
-    existing_user = db.execute(stmt).scalars().first()
+    existing_user = (await db.execute(stmt)).scalars().first()
 
     if not existing_user:
         user.is_active = True
@@ -40,7 +43,7 @@ async def register_user(db: db_dep, data: UserRegisterRequest):
         user.is_superuser = True
 
     db.add(user)
-    db.commit()
+    await db.commit()
 
     return JSONResponse(
         status_code=201, content={"message": "Email confirmation sent to your email."}
@@ -48,7 +51,9 @@ async def register_user(db: db_dep, data: UserRegisterRequest):
 
 
 @router.post("/verify/{secret_code}/", response_model=UserRegisterResponse)
-async def verify_register(db: db_dep, secret_code: str):
+async def verify_register(
+    secret_code: str, db: AsyncSession = Depends(db_dep)
+):
     email = redis_client.get(secret_code)
     print(email.decode("utf-8"))
 
@@ -56,13 +61,13 @@ async def verify_register(db: db_dep, secret_code: str):
         raise HTTPException(status_code=400, detail="Invalid code")
 
     stmt = select(User).where(User.email == email.decode("utf-8"))
-    user = db.execute(stmt).scalars().first()
+    user = (await db.execute(stmt)).scalars().first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     user.is_active = True
-    db.commit()
+    await db.commit()
 
     return JSONResponse(
         status_code=200, content={"message": "User registered successfully"}

@@ -1,8 +1,9 @@
 import secrets
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Depends
 from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db as db_dep
 from app.models import User, UserSessionToken
@@ -16,9 +17,13 @@ router = APIRouter(prefix="/session", tags=["Auth"])
 
 
 @router.post("/login/", status_code=200)
-async def login(db: db_dep, login_data: UserLoginRequest, response: Response):
+async def login(
+    login_data: UserLoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(db_dep),
+):
     stmt = select(User).where(User.email == login_data.email)
-    res = db.execute(stmt)
+    res = await db.execute(stmt)
     user = res.scalars().first()
 
     if not user:
@@ -30,8 +35,8 @@ async def login(db: db_dep, login_data: UserLoginRequest, response: Response):
     sessionId = secrets.token_urlsafe(32)
 
     stmt = delete(UserSessionToken).where(UserSessionToken.user_id == user.id)
-    db.execute(stmt)
-    db.flush()
+    await db.execute(stmt)
+    await db.flush()
 
     new_session = UserSessionToken(
         token=sessionId,
@@ -40,8 +45,8 @@ async def login(db: db_dep, login_data: UserLoginRequest, response: Response):
         + timedelta(days=settings.SESSION_ID_EXPIRE_DAYS),
     )
     db.add(new_session)
-    db.commit()
-    db.refresh(new_session)
+    await db.commit()
+    await db.refresh(new_session)
 
     response.set_cookie(
         key="session_id",
@@ -54,5 +59,7 @@ async def login(db: db_dep, login_data: UserLoginRequest, response: Response):
 
 
 @router.get("/profile/", response_model=UserProfileResponse)
-async def user_profile(db: db_dep, current_user: session_auth_dep):
+async def user_profile(
+    current_user: session_auth_dep, db: AsyncSession = Depends(db_dep)
+):
     return current_user

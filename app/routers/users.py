@@ -9,7 +9,7 @@ from app.schemas.user import UserCreate, UserResponse, UserUpdate
 router = APIRouter()
 
 
-@router.post("/users/create", response_model=UserResponse)
+@router.post("/create", response_model=UserResponse)
 async def user_create(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     new_user = User(
         first_name=user_in.first_name,
@@ -28,14 +28,14 @@ async def user_create(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     return new_user
 
 
-@router.get("/users/list", response_model=list[UserResponse])
+@router.get("/list", response_model=list[UserResponse])
 async def users_list(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     users = result.scalars().all()
     return users
 
 
-@router.get("/users/{user_id}/", response_model=UserResponse)
+@router.get("/{user_id}/", response_model=UserResponse)
 async def user_detail(user_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -46,7 +46,7 @@ async def user_detail(user_id: int, db: AsyncSession = Depends(get_db)):
     return user
 
 
-@router.put("/users/{user_id}/", response_model=UserResponse)
+@router.put("/{user_id}/", response_model=UserResponse)
 async def user_update(
     user_id: int, user_in: UserUpdate, db: AsyncSession = Depends(get_db)
 ):
@@ -71,7 +71,7 @@ async def user_update(
     return user
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/{user_id}")
 async def user_delete(user_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
