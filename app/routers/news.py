@@ -38,6 +38,7 @@ from app.schemas.news import (
     TagResponse,
 )
 from app.schemas.user import UserResponse, UserCreate, UserUpdate
+from app.dependencies import current_user_jwt_dep
 from app.services.utils import generate_slug
 
 router = APIRouter()
@@ -133,6 +134,7 @@ async def news_trending(
 @router.post("/", response_model=PostResponse)
 async def news_create(
     post_in: PostCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     slug = generate_slug(post_in.title)
@@ -155,7 +157,11 @@ async def news_create(
 
 
 @router.post("/authors", response_model=UserResponse)
-async def author_create(user_in: UserCreate, session: AsyncSession = Depends(get_db)):
+async def author_create(
+    user_in: UserCreate,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
+):
     user = User(
         first_name=user_in.first_name,
         last_name=user_in.last_name,
@@ -178,6 +184,7 @@ async def author_create(user_in: UserCreate, session: AsyncSession = Depends(get
 @router.post("/categories", response_model=CategoryResponse)
 async def category_create(
     category_in: CategoryCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     category = Category(
@@ -199,7 +206,11 @@ async def tag_list(session: AsyncSession = Depends(get_db)):
 
 
 @router.post("/tags", response_model=TagResponse)
-async def tag_create(tag_in: TagCreate, session: AsyncSession = Depends(get_db)):
+async def tag_create(
+    tag_in: TagCreate,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
+):
     tag = Tag(name=tag_in.name, slug=generate_slug(tag_in.name))
     session.add(tag)
     await session.commit()
@@ -209,7 +220,10 @@ async def tag_create(tag_in: TagCreate, session: AsyncSession = Depends(get_db))
 
 @router.put("/tags/{tag_id}", response_model=TagResponse)
 async def tag_update(
-    tag_id: int, tag_in: TagCreate, session: AsyncSession = Depends(get_db)
+    tag_id: int,
+    tag_in: TagCreate,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     tag = await session.get(Tag, tag_id)
     if not tag:
@@ -230,7 +244,9 @@ async def profession_list(session: AsyncSession = Depends(get_db)):
 
 @router.post("/professions", response_model=ProfessionResponse)
 async def profession_create(
-    profession_in: ProfessionCreate, session: AsyncSession = Depends(get_db)
+    profession_in: ProfessionCreate,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     profession = Profession(name=profession_in.name)
     session.add(profession)
@@ -243,6 +259,7 @@ async def profession_create(
 async def profession_update(
     profession_id: int,
     profession_in: ProfessionCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     profession = await session.get(Profession, profession_id)
@@ -263,7 +280,9 @@ async def media_list(session: AsyncSession = Depends(get_db)):
 
 @router.post("/media", response_model=MediaResponse)
 async def media_create(
-    media_in: MediaCreate, session: AsyncSession = Depends(get_db)
+    media_in: MediaCreate,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     media = Media(url=media_in.url)
     session.add(media)
@@ -273,7 +292,11 @@ async def media_create(
 
 
 @router.delete("/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def media_delete(media_id: int, session: AsyncSession = Depends(get_db)):
+async def media_delete(
+    media_id: int,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
+):
     media = await session.get(Media, media_id)
     if not media:
         raise HTTPException(404, "Media not found")
@@ -286,6 +309,7 @@ async def media_delete(media_id: int, session: AsyncSession = Depends(get_db)):
 async def write_comment(
     news_id: int,
     comment_in: CommentCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     post = await session.get(Post, news_id)
@@ -309,7 +333,10 @@ async def write_comment(
 
 @router.post("/{news_id}/tags/{tag_id}", status_code=status.HTTP_201_CREATED)
 async def attach_tag(
-    news_id: int, tag_id: int, session: AsyncSession = Depends(get_db)
+    news_id: int,
+    tag_id: int,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     post = await session.get(Post, news_id)
     if not post:
@@ -334,7 +361,10 @@ async def attach_tag(
 
 @router.delete("/{news_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def detach_tag(
-    news_id: int, tag_id: int, session: AsyncSession = Depends(get_db)
+    news_id: int,
+    tag_id: int,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     stmt = select(PostTag).where(
         PostTag.post_id == news_id, PostTag.tag_id == tag_id
@@ -349,7 +379,10 @@ async def detach_tag(
 
 @router.post("/{news_id}/media/{media_id}", status_code=status.HTTP_201_CREATED)
 async def attach_media(
-    news_id: int, media_id: int, session: AsyncSession = Depends(get_db)
+    news_id: int,
+    media_id: int,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     post = await session.get(Post, news_id)
     if not post:
@@ -376,7 +409,10 @@ async def attach_media(
     "/{news_id}/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT
 )
 async def detach_media(
-    news_id: int, media_id: int, session: AsyncSession = Depends(get_db)
+    news_id: int,
+    media_id: int,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     stmt = select(PostMedia).where(
         PostMedia.post_id == news_id, PostMedia.media_id == media_id
@@ -392,6 +428,7 @@ async def detach_media(
 @router.post("/devices", response_model=DeviceResponse)
 async def register_device(
     device_in: DeviceCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     device = Devices(
@@ -408,6 +445,7 @@ async def register_device(
 async def like_news(
     news_id: int,
     like_in: LikeCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     post = await session.get(Post, news_id)
@@ -428,7 +466,9 @@ async def like_news(
 
 @router.post("/search/track", response_model=SearchTrackResponse)
 async def track_search(
-    data: SearchTrackRequest, session: AsyncSession = Depends(get_db)
+    data: SearchTrackRequest,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
 ):
     stmt = select(UserSearch).where(UserSearch.term == data.term)
     res = await session.execute(stmt)
@@ -448,6 +488,7 @@ async def track_search(
 async def update_author(
     author_id: int,
     user_in: UserUpdate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     user = await session.get(User, author_id)
@@ -467,6 +508,7 @@ async def update_author(
 async def update_category(
     category_id: int,
     category_in: CategoryCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     category = await session.get(Category, category_id)
@@ -485,6 +527,7 @@ async def update_category(
 async def update_news(
     news_id: int,
     post_in: PostCreate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     post = await session.get(Post, news_id)
@@ -508,6 +551,7 @@ async def comment_edit(
     news_id: int,
     comment_id: int,
     comment_in: CommentUpdate,
+    current_user: current_user_jwt_dep,
     session: AsyncSession = Depends(get_db),
 ):
     comment = await session.get(Comment, comment_id)
@@ -523,7 +567,11 @@ async def comment_edit(
 @router.delete(
     "/{news_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
 )
-async def news_delete(news_id: int, session: AsyncSession = Depends(get_db)):
+async def news_delete(
+    news_id: int,
+    current_user: current_user_jwt_dep,
+    session: AsyncSession = Depends(get_db),
+):
     post = await session.get(Post, news_id)
     if not post:
         raise HTTPException(404, "News not found")
