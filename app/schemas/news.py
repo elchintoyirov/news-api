@@ -29,7 +29,7 @@ class PostBase(BaseModel):
 
 
 class PostCreate(PostBase):
-    slug: str
+    pass
 
 
 class PostUpdate(BaseModel):
@@ -111,5 +111,45 @@ class ProfessionUpdate(BaseModel):
 
 class ProfessionResponse(ProfessionBase):
     id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DeviceCreate(BaseModel):
+    user_agent: str
+
+
+class DeviceResponse(BaseModel):
+    id: int
+    user_agent: str
+    last_active: datetime
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LikeCreate(BaseModel):
+    device_id: int
+
+
+class SearchTrackRequest(BaseModel):
+    term: str
+
+
+class SearchTrackResponse(BaseModel):
+    term: str
+    count: int
+
+
+class MediaCreate(BaseModel):
+    url: str
+
+
+class MediaResponse(BaseModel):
+    id: int
+    url: str
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
