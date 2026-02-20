@@ -166,7 +166,7 @@ async def author_create(
         first_name=user_in.first_name,
         last_name=user_in.last_name,
         email=user_in.email,
-        password_hash=user_in.password_hash,
+        password_hash=hash_password(user_in.password),
         bio=user_in.bio,
         profession_id=user_in.profession_id,
         is_active=user_in.is_active,
