@@ -48,4 +48,4 @@ class UserRegisterRequest(BaseModel):
 
 
 class UserRegisterResponse(BaseModel):
-    email: EmailStr
+    message: str
