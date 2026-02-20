@@ -52,7 +52,7 @@ async def login(
         key="session_id",
         value=sessionId,
         httponly=True,
-        secure=True,
+        secure=settings.COOKIE_SECURE,
         samesite="strict",
         max_age=settings.SESSION_ID_EXPIRE_DAYS * 24 * 60 * 60,
     )

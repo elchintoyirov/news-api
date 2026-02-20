@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str | None = None
 
     REDIS_URL: str
+    COOKIE_SECURE: bool = True
 
     MEDIA_PATH: str = "media/"
     BASE_URL: str = "https://newsapi.uz"
