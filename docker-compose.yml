@@ -8,8 +8,10 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/mydatabase
+      - REDIS_URL=redis://:1234@redis:6379/4
     depends_on:
       - db
+      - redis
     volumes:
       - .:/app
 
@@ -25,5 +27,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: newsapi_redis
+    command: ["redis-server", "--requirepass", "1234"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
+  redis_data:
