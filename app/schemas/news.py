@@ -80,7 +80,6 @@ class CommentResponse(CommentBase):
 
 class TagBase(BaseModel):
     name: str
-    slug: str
 
 
 class TagCreate(TagBase):
@@ -93,6 +92,7 @@ class TagUpdate(BaseModel):
 
 class TagResponse(TagBase):
     id: int
+    slug: str
 
     model_config = ConfigDict(from_attributes=True)
 
