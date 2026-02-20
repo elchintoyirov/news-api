@@ -86,8 +86,6 @@ async def get_current_user_jwt(
     if not credentials:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    print(credentials.credentials)
-
     decoded = decode_jwt_token(credentials.credentials)
     user_id = decoded["sub"]
     exp = datetime.fromtimestamp(decoded["exp"], tz=timezone.utc)

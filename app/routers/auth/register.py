@@ -55,8 +55,6 @@ async def verify_register(
     if not email:
         raise HTTPException(status_code=400, detail="Invalid code")
 
-    print(email.decode("utf-8"))
-
     stmt = select(User).where(User.email == email.decode("utf-8"))
     user = (await db.execute(stmt)).scalars().first()
 
