@@ -8,7 +8,9 @@ class User(BaseModel):
 
     first_name: Mapped[str | None] = mapped_column(String(25), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(25), nullable=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    email: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     bio: Mapped[str] = mapped_column(String(250), default="")
 
