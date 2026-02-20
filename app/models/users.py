@@ -6,8 +6,8 @@ from app.models.base import BaseModel
 class User(BaseModel):
     __tablename__ = "user"
 
-    first_name: Mapped[str] = mapped_column(String(25), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(25), nullable=False)
+    first_name: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(25), nullable=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     bio: Mapped[str] = mapped_column(String(250), default="")
