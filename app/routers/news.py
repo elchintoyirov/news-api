@@ -4,7 +4,20 @@ from typing import List
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.models import User, Category, Post, Comment, Tag, Like
+from app.models import (
+    User,
+    Category,
+    Post,
+    Comment,
+    Tag,
+    Profession,
+    Like,
+    Devices,
+    UserSearch,
+    Media,
+    PostTag,
+    PostMedia,
+)
 from app.schemas.news import (
     PostCreate,
     CommentCreate,
@@ -12,6 +25,17 @@ from app.schemas.news import (
     CategoryCreate,
     CategoryResponse,
     CommentUpdate,
+    DeviceCreate,
+    DeviceResponse,
+    LikeCreate,
+    MediaCreate,
+    MediaResponse,
+    ProfessionCreate,
+    ProfessionResponse,
+    SearchTrackRequest,
+    SearchTrackResponse,
+    TagCreate,
+    TagResponse,
 )
 from app.schemas.user import UserResponse, UserCreate, UserUpdate
 from app.services.utils import generate_slug
@@ -72,6 +96,17 @@ async def search_news(
 ):
     stmt = select(Post).where(Post.title.ilike(f"%{q}%"))
     result = await session.execute(stmt)
+
+    search_stmt = select(UserSearch).where(UserSearch.term == q)
+    search_res = await session.execute(search_stmt)
+    search = search_res.scalars().first()
+    if search:
+        search.count += 1
+    else:
+        search = UserSearch(term=q, count=1)
+        session.add(search)
+    await session.commit()
+
     return result.scalars().all()
 
 
@@ -82,7 +117,7 @@ async def news_trending(
 ):
 
     stmt = (
-        select(Like)
+        select(Post)
         .outerjoin(Like, Like.post_id == Post.id)
         .group_by(Post.id)
         .order_by(func.count(Like.id).desc())
@@ -157,6 +192,96 @@ async def category_create(
     return category
 
 
+@router.get("/tags", response_model=list[TagResponse])
+async def tag_list(session: AsyncSession = Depends(get_db)):
+    result = await session.execute(select(Tag))
+    return result.scalars().all()
+
+
+@router.post("/tags", response_model=TagResponse)
+async def tag_create(tag_in: TagCreate, session: AsyncSession = Depends(get_db)):
+    tag = Tag(name=tag_in.name, slug=generate_slug(tag_in.name))
+    session.add(tag)
+    await session.commit()
+    await session.refresh(tag)
+    return tag
+
+
+@router.put("/tags/{tag_id}", response_model=TagResponse)
+async def tag_update(
+    tag_id: int, tag_in: TagCreate, session: AsyncSession = Depends(get_db)
+):
+    tag = await session.get(Tag, tag_id)
+    if not tag:
+        raise HTTPException(404, "Tag not found")
+
+    tag.name = tag_in.name
+    tag.slug = generate_slug(tag_in.name)
+    await session.commit()
+    await session.refresh(tag)
+    return tag
+
+
+@router.get("/professions", response_model=list[ProfessionResponse])
+async def profession_list(session: AsyncSession = Depends(get_db)):
+    result = await session.execute(select(Profession))
+    return result.scalars().all()
+
+
+@router.post("/professions", response_model=ProfessionResponse)
+async def profession_create(
+    profession_in: ProfessionCreate, session: AsyncSession = Depends(get_db)
+):
+    profession = Profession(name=profession_in.name)
+    session.add(profession)
+    await session.commit()
+    await session.refresh(profession)
+    return profession
+
+
+@router.put("/professions/{profession_id}", response_model=ProfessionResponse)
+async def profession_update(
+    profession_id: int,
+    profession_in: ProfessionCreate,
+    session: AsyncSession = Depends(get_db),
+):
+    profession = await session.get(Profession, profession_id)
+    if not profession:
+        raise HTTPException(404, "Profession not found")
+
+    profession.name = profession_in.name
+    await session.commit()
+    await session.refresh(profession)
+    return profession
+
+
+@router.get("/media", response_model=list[MediaResponse])
+async def media_list(session: AsyncSession = Depends(get_db)):
+    result = await session.execute(select(Media))
+    return result.scalars().all()
+
+
+@router.post("/media", response_model=MediaResponse)
+async def media_create(
+    media_in: MediaCreate, session: AsyncSession = Depends(get_db)
+):
+    media = Media(url=media_in.url)
+    session.add(media)
+    await session.commit()
+    await session.refresh(media)
+    return media
+
+
+@router.delete("/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def media_delete(media_id: int, session: AsyncSession = Depends(get_db)):
+    media = await session.get(Media, media_id)
+    if not media:
+        raise HTTPException(404, "Media not found")
+
+    await session.delete(media)
+    await session.commit()
+
+
 @router.post("/{news_id}/comments", response_model=None)
 async def write_comment(
     news_id: int,
@@ -180,6 +305,143 @@ async def write_comment(
     session.add(comment)
     await session.commit()
     return comment
+
+
+@router.post("/{news_id}/tags/{tag_id}", status_code=status.HTTP_201_CREATED)
+async def attach_tag(
+    news_id: int, tag_id: int, session: AsyncSession = Depends(get_db)
+):
+    post = await session.get(Post, news_id)
+    if not post:
+        raise HTTPException(404, "News not found")
+
+    tag = await session.get(Tag, tag_id)
+    if not tag:
+        raise HTTPException(404, "Tag not found")
+
+    stmt = select(PostTag).where(
+        PostTag.post_id == news_id, PostTag.tag_id == tag_id
+    )
+    existing = (await session.execute(stmt)).scalars().first()
+    if existing:
+        return {"message": "Already attached"}
+
+    link = PostTag(post_id=news_id, tag_id=tag_id)
+    session.add(link)
+    await session.commit()
+    return {"message": "Tag attached"}
+
+
+@router.delete("/{news_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def detach_tag(
+    news_id: int, tag_id: int, session: AsyncSession = Depends(get_db)
+):
+    stmt = select(PostTag).where(
+        PostTag.post_id == news_id, PostTag.tag_id == tag_id
+    )
+    link = (await session.execute(stmt)).scalars().first()
+    if not link:
+        raise HTTPException(404, "Tag link not found")
+
+    await session.delete(link)
+    await session.commit()
+
+
+@router.post("/{news_id}/media/{media_id}", status_code=status.HTTP_201_CREATED)
+async def attach_media(
+    news_id: int, media_id: int, session: AsyncSession = Depends(get_db)
+):
+    post = await session.get(Post, news_id)
+    if not post:
+        raise HTTPException(404, "News not found")
+
+    media = await session.get(Media, media_id)
+    if not media:
+        raise HTTPException(404, "Media not found")
+
+    stmt = select(PostMedia).where(
+        PostMedia.post_id == news_id, PostMedia.media_id == media_id
+    )
+    existing = (await session.execute(stmt)).scalars().first()
+    if existing:
+        return {"message": "Already attached"}
+
+    link = PostMedia(post_id=news_id, media_id=media_id)
+    session.add(link)
+    await session.commit()
+    return {"message": "Media attached"}
+
+
+@router.delete(
+    "/{news_id}/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def detach_media(
+    news_id: int, media_id: int, session: AsyncSession = Depends(get_db)
+):
+    stmt = select(PostMedia).where(
+        PostMedia.post_id == news_id, PostMedia.media_id == media_id
+    )
+    link = (await session.execute(stmt)).scalars().first()
+    if not link:
+        raise HTTPException(404, "Media link not found")
+
+    await session.delete(link)
+    await session.commit()
+
+
+@router.post("/devices", response_model=DeviceResponse)
+async def register_device(
+    device_in: DeviceCreate,
+    session: AsyncSession = Depends(get_db),
+):
+    device = Devices(
+        user_agent=device_in.user_agent,
+        last_active=datetime.now(timezone.utc),
+    )
+    session.add(device)
+    await session.commit()
+    await session.refresh(device)
+    return device
+
+
+@router.post("/{news_id}/likes", status_code=status.HTTP_201_CREATED)
+async def like_news(
+    news_id: int,
+    like_in: LikeCreate,
+    session: AsyncSession = Depends(get_db),
+):
+    post = await session.get(Post, news_id)
+    if not post:
+        raise HTTPException(404, "Post not found")
+
+    device = await session.get(Devices, like_in.device_id)
+    if not device:
+        raise HTTPException(404, "Device not found")
+
+    like = Like(post_id=news_id, device_id=like_in.device_id)
+    device.last_active = datetime.now(timezone.utc)
+
+    session.add(like)
+    await session.commit()
+    return {"message": "Liked"}
+
+
+@router.post("/search/track", response_model=SearchTrackResponse)
+async def track_search(
+    data: SearchTrackRequest, session: AsyncSession = Depends(get_db)
+):
+    stmt = select(UserSearch).where(UserSearch.term == data.term)
+    res = await session.execute(stmt)
+    search = res.scalars().first()
+
+    if search:
+        search.count += 1
+    else:
+        search = UserSearch(term=data.term, count=1)
+        session.add(search)
+
+    await session.commit()
+    return {"term": search.term, "count": search.count}
 
 
 @router.put("/authors/{author_id}", response_model=UserResponse)
