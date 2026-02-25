@@ -1,14 +1,15 @@
-{pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {} }:
 
 pkgs.mkShell {
-	name = "news-api";
-	
-	packages = [
-		pkgs.python312
-		pkgs.uv
-	];
-	
-	
+  name = "news-api";
+
+  packages = [
+    pkgs.python312
+    pkgs.uv
+    pkgs.gcc
+    pkgs.stdenv.cc.cc.lib
+  ];
+
   shellHook = ''
     echo "🚀 Entered news-api dev shell"
 
@@ -19,5 +20,4 @@ pkgs.mkShell {
 
     source .venv/bin/activate
   '';
-
 }
