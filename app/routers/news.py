@@ -39,7 +39,7 @@ from app.schemas.news import (
 )
 from app.schemas.user import UserResponse, UserCreate, UserUpdate
 from app.dependencies import current_user_jwt_dep
-from app.services.utils import generate_slug
+from app.services.utils import generate_slug, hash_password
 
 router = APIRouter()
 
